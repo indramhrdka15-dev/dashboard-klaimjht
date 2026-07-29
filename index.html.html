@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dasbor Analisis Klaim — BPJS Ketenagakerjaan (Prototipe)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#16202B;
+    --ink-soft:#4A5A68;
+    --paper:#EEF1F3;
+    --card:#FFFFFF;
+    --line:#D7DEE3;
+    --amber:#E2A73E;
+    --amber-deep:#B8822A;
+    --teal:#2F8F82;
+    --font-display: 'Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body: -apple-system, BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;
+    --font-mono: 'SF Mono','Cascadia Code',Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.5;
+  }
+  a{color:inherit;}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    background:var(--ink);
+    color:#F2F0EA;
+    padding:56px 24px 64px;
+  }
+  .hero-inner{
+    max-width:960px;
+    margin:0 auto;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin:0 0 18px;
+  }
+  .hero h1{
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:clamp(28px,4vw,42px);
+    line-height:1.15;
+    margin:0 0 28px;
+    max-width:22ch;
+  }
+  .hero-stat{
+    display:flex;
+    align-items:baseline;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  .hero-stat .num{
+    font-family:var(--font-mono);
+    font-size:clamp(48px,8vw,84px);
+    font-weight:700;
+    color:var(--amber);
+    line-height:1;
+    letter-spacing:-0.02em;
+  }
+  .hero-stat .cap{
+    font-size:15px;
+    color:#C7CDD3;
+    max-width:26ch;
+  }
+  .hero-sub{
+    margin-top:26px;
+    font-size:14px;
+    color:#9AA5AD;
+    border-top:1px solid #2A3742;
+    padding-top:18px;
+  }
+  .hero-sub strong{color:#E7E3D8;font-weight:600;}
+
+  /* ---------- Controls ---------- */
+  .controls{
+    max-width:960px;
+    margin:-28px auto 0;
+    padding:0 24px;
+  }
+  .control-bar{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 20px;
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+    box-shadow:0 6px 18px rgba(22,32,43,.08);
+  }
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .field select{
+    font-family:var(--font-body);
+    font-size:14px;
+    padding:7px 10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:var(--paper);
+    color:var(--ink);
+    min-width:160px;
+  }
+
+  /* ---------- Main ---------- */
+  main{
+    max-width:960px;
+    margin:0 auto;
+    padding:40px 24px 80px;
+  }
+  .section-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--amber-deep);
+    margin:0 0 6px;
+  }
+  h2{
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:22px;
+    margin:0 0 4px;
+  }
+  .section-note{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    margin:0 0 20px;
+    max-width:60ch;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:24px;
+    margin-bottom:20px;
+  }
+  .chart-wrap{position:relative;height:300px;}
+
+  .grid-2{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:720px){
+    .grid-2{grid-template-columns:1fr;}
+    .hero{padding:40px 20px 48px;}
+  }
+
+  .kpi-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+    margin-bottom:24px;
+  }
+  @media (max-width:640px){.kpi-row{grid-template-columns:1fr;}}
+  .kpi{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .kpi .k-label{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .kpi .k-val{
+    font-family:var(--font-mono);
+    font-size:26px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  footer{
+    max-width:960px;
+    margin:0 auto;
+    padding:0 24px 60px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    border-top:1px solid var(--line);
+    padding-top:20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">Prototipe — analisis kepesertaan</p>
+    <h1>Kapan klaim biasanya memuncak, dan segmen usia mana yang paling banyak mengajukan?</h1>
+    <div class="hero-stat">
+      <span class="num" id="peakMonth">—</span>
+      <span class="cap">Bulan dengan volume klaim <strong id="peakLabel">JHT</strong> tertinggi, dari data yang ditampilkan saat ini</span>
+    </div>
+    <p class="hero-sub">Dasbor ini adalah <strong>prototipe</strong> dengan data simulasi (dummy), dibuat untuk menguji rancangan analisis sebelum diisi data kepesertaan yang sebenarnya.</p>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="control-bar">
+    <div class="field">
+      <label for="selYear">Tahun</label>
+      <select id="selYear">
+        <option value="2024">2024</option>
+        <option value="2025" selected>2025</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="selClaim">Jenis klaim disorot</label>
+      <select id="selClaim">
+        <option value="JHT" selected>JHT</option>
+        <option value="JKK">JKK</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="selSeries">Tampilkan di grafik tren</label>
+      <select id="selSeries">
+        <option value="both" selected>JHT &amp; JKK</option>
+        <option value="JHT">JHT saja</option>
+        <option value="JKK">JKK saja</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="k-label">Total klaim (tahun ini)</div>
+      <div class="k-val" id="kpiTotal">—</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label">Rata-rata per bulan</div>
+      <div class="k-val" id="kpiAvg">—</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label">Segmen usia dominan</div>
+      <div class="k-val" id="kpiAge">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="section-label">Tren klaim</p>
+    <h2>Jumlah pengajuan klaim per bulan</h2>
+    <p class="section-note">Menunjukkan pola musiman — pada data simulasi ini, klaim JHT cenderung naik menjelang akhir tahun, sejalan dengan pola pengunduran diri/PHK yang lazim terjadi di periode tersebut.</p>
+    <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <p class="section-label">Segmentasi peserta</p>
+      <h2>Distribusi usia pengklaim</h2>
+      <p class="section-note">Kelompok usia mana yang paling banyak mengajukan klaim <span id="ageClaimLabel">JHT</span>.</p>
+      <div class="chart-wrap"><canvas id="chartAge"></canvas></div>
+    </div>
+    <div class="card">
+      <p class="section-label">Catatan analisis</p>
+      <h2>Cara membaca dasbor ini</h2>
+      <p class="section-note" style="margin-bottom:14px;">Grafik tren membantu menjawab <em>kapan</em> volume klaim memuncak, sedangkan grafik distribusi usia membantu menjawab <em>segmen mana</em> yang paling banyak mengajukan — dua pertanyaan inti dari mini proyek ini.</p>
+      <p class="section-note">Saat data kepesertaan asli sudah tersedia (sudah dianonimkan), angka-angka dummy di halaman ini tinggal diganti tanpa mengubah struktur dasbor.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Data pada dasbor ini bersifat simulasi (dummy) dan dibuat semata untuk keperluan pengujian rancangan mini proyek. Bukan data kepesertaan BPJS Ketenagakerjaan yang sebenarnya.
+</footer>
+
+<script>
+const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+// Data dummy tren klaim per bulan (pola naik menjelang akhir tahun)
+const trendData = {
+  2024: { JHT:[120,110,130,125,140,150,160,155,170,190,230,310], JKK:[40,42,38,45,50,48,52,49,55,58,60,65] },
+  2025: { JHT:[130,125,140,138,150,160,175,168,185,205,250,330], JKK:[42,44,40,47,52,50,54,51,57,60,62,68] }
+};
+
+// Data dummy distribusi usia pengklaim, per jenis klaim
+const ageLabels = ['20–29','30–39','40–49','50–59','60+'];
+const ageData = {
+  JHT: [180,340,290,150,60],
+  JKK: [70,150,180,140,50]
+};
+
+const fmt = n => new Intl.NumberFormat('id-ID').format(n);
+
+let trendChart, ageChart;
+
+function buildTrendDatasets(year, seriesMode){
+  const d = trendData[year];
+  const sets = [];
+  if(seriesMode === 'both' || seriesMode === 'JHT'){
+    sets.push({ label:'JHT', data:d.JHT, borderColor:'#E2A73E', backgroundColor:'rgba(226,167,62,0.12)', tension:.3, fill:true, pointRadius:3 });
+  }
+  if(seriesMode === 'both' || seriesMode === 'JKK'){
+    sets.push({ label:'JKK', data:d.JKK, borderColor:'#2F8F82', backgroundColor:'rgba(47,143,130,0.10)', tension:.3, fill:true, pointRadius:3 });
+  }
+  return sets;
+}
+
+function render(){
+  const year = document.getElementById('selYear').value;
+  const claim = document.getElementById('selClaim').value;
+  const seriesMode = document.getElementById('selSeries').value;
+
+  // ---- Hero & KPI ----
+  const claimSeries = trendData[year][claim];
+  const peakIdx = claimSeries.indexOf(Math.max(...claimSeries));
+  const total = claimSeries.reduce((a,b)=>a+b,0);
+  const avg = Math.round(total / 12);
+  const ageMaxIdx = ageData[claim].indexOf(Math.max(...ageData[claim]));
+
+  document.getElementById('peakMonth').textContent = months[peakIdx];
+  document.getElementById('peakLabel').textContent = claim;
+  document.getElementById('kpiTotal').textContent = fmt(total);
+  document.getElementById('kpiAvg').textContent = fmt(avg) + ' / bln';
+  document.getElementById('kpiAge').textContent = ageLabels[ageMaxIdx] + ' th';
+  document.getElementById('ageClaimLabel').textContent = claim;
+
+  // ---- Trend chart ----
+  const trendDatasets = buildTrendDatasets(year, seriesMode);
+  if(!trendChart){
+    trendChart = new Chart(document.getElementById('chartTrend'), {
+      type:'line',
+      data:{ labels:months, datasets:trendDatasets },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top', labels:{ font:{family:"'SF Mono',Consolas,monospace", size:11} } } },
+        scales:{
+          y:{ beginAtZero:true, grid:{ color:'#E4E9EC' }, ticks:{ font:{family:"'SF Mono',Consolas,monospace", size:11} } },
+          x:{ grid:{ display:false }, ticks:{ font:{family:"'SF Mono',Consolas,monospace", size:11} } }
+        }
+      }
+    });
+  } else {
+    trendChart.data.labels = months;
+    trendChart.data.datasets = trendDatasets;
+    trendChart.update();
+  }
+
+  // ---- Age chart ----
+  const ageValues = ageData[claim];
+  if(!ageChart){
+    ageChart = new Chart(document.getElementById('chartAge'), {
+      type:'bar',
+      data:{ labels:ageLabels, datasets:[{ label:'Jumlah pengklaim', data:ageValues, backgroundColor:'#E2A73E', borderRadius:4 }] },
+      options:{
+        responsive:true, maintainAspectRatio:false, indexAxis:'y',
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ beginAtZero:true, grid:{ color:'#E4E9EC' }, ticks:{ font:{family:"'SF Mono',Consolas,monospace", size:11} } },
+          y:{ grid:{ display:false }, ticks:{ font:{family:"'SF Mono',Consolas,monospace", size:12} } }
+        }
+      }
+    });
+  } else {
+    ageChart.data.datasets[0].data = ageValues;
+    ageChart.update();
+  }
+}
+
+document.getElementById('selYear').addEventListener('change', render);
+document.getElementById('selClaim').addEventListener('change', render);
+document.getElementById('selSeries').addEventListener('change', render);
+
+render();
+</script>
+
+</body>
+</html>
